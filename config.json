@@ -1,0 +1,33 @@
+{
+  "debug_mode": {
+    "type": "boolean",
+    "default": false,
+    "description": "Enable verbose server-side debug logging of prompts / usage for the consultant bot (never shown to the guest). Disable in production."
+  },
+  "llm_connection_slug": {
+    "type": "string",
+    "default": "",
+    "description": "Slug of the CORE LLM Connection (S97) the consultant uses. Empty selects the active default connection. The plugin stores NO API key — the model/endpoint/key live in the core LLM connection registry."
+  },
+  "persona": {
+    "type": "string",
+    "default": "You are a friendly, concise sales consultant for our platform. Recommend only from the provided catalog and never invent a price.",
+    "description": "Persona text steering the consultant + sales-agent voice."
+  },
+  "reward_enabled": {
+    "type": "boolean",
+    "default": true,
+    "description": "When on, the consultant offers a referral discount (S92) on a buy intent so a redeemed sale credits the bot's token balance."
+  },
+  "retrieval_mode": {
+    "type": "string",
+    "default": "fts",
+    "options": ["fts"],
+    "description": "Corpus retrieval backend. 'fts' = Postgres full-text search baseline (no external vector DB)."
+  },
+  "rag_dir": {
+    "type": "string",
+    "default": "${VBWD_VAR_DIR}/bot-meinchat-llm/rag",
+    "description": "Directory of the static sales corpus (.md and .pdf). ${VBWD_VAR_DIR} is resolved at runtime."
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "tabs": [
+    {
+      "id": "general",
+      "label": "General",
+      "fields": [
+        {
+          "key": "debug_mode",
+          "label": "Debug mode",
+          "component": "checkbox",
+          "description": "Verbose server-side logging of prompts / usage (never shown to the guest). Disable in production."
+        },
+        {
+          "key": "llm_connection_slug",
+          "label": "LLM connection slug",
+          "component": "input",
+          "inputType": "text",
+          "description": "Slug of the core LLM Connection to use. Empty selects the active default. No API key is stored here — the key lives in the core LLM connection."
+        },
+        {
+          "key": "persona",
+          "label": "Persona",
+          "component": "textarea",
+          "description": "Persona text steering the consultant + sales-agent voice."
+        },
+        {
+          "key": "reward_enabled",
+          "label": "Offer referral reward",
+          "component": "checkbox",
+          "description": "Offer a referral discount on a buy intent so a redeemed sale credits the bot's token balance (S92)."
+        },
+        {
+          "key": "retrieval_mode",
+          "label": "Retrieval mode",
+          "component": "select",
+          "options": [
+            { "value": "fts", "label": "Postgres full-text (FTS)" }
+          ],
+          "description": "Corpus retrieval backend. FTS is the baseline (no external vector DB)."
+        },
+        {
+          "key": "rag_dir",
+          "label": "Corpus directory",
+          "component": "input",
+          "inputType": "text",
+          "description": "Directory of the static sales corpus (.md and .pdf). ${VBWD_VAR_DIR} is resolved at runtime."
+        }
+      ]
+    }
+  ]
+}

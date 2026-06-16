@@ -1,0 +1,11 @@
+# Runtime dependencies for the bot-meinchat-llm plugin.
+#
+# These are PLUGIN-LOCAL deps (not core requirements). The LLM client lives in
+# CORE (S97) and is consumed via container.llm_client(...), so no LLM SDK is
+# pinned here. PriceFactory / TokenService / referral are provided by core +
+# peer plugins.
+#
+# pypdf: pure-Python PDF text extraction for the sales corpus (.pdf files).
+# The ingest service soft-imports it, so its absence only skips .pdf files
+# (degrade, never crash); install it to enable .pdf corpus ingestion.
+pypdf==4.3.1
