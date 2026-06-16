@@ -180,36 +180,17 @@ class ConsultantService:
     def _build_system_prompt(
         self, catalog_block: CatalogBlock, chunks: List[Any]
     ) -> str:
-        catalog_text = self._render_catalog(catalog_block)
-        corpus_text = self._render_corpus(chunks)
-        return (
-            f"{self._persona}\n\n"
-            "You are a concise sales consultant for VBWD. Keep answers short — "
-            "the guest is billed per word for both their question and your "
-            "reply.\n\n"
-            "RULES:\n"
-            "- STAY ON TOPIC. You ONLY discuss VBWD: its products, plans, and "
-            "how to buy them, using the CATALOG and SALES NOTES below. If the "
-            "customer asks anything unrelated to VBWD (general knowledge, other "
-            "companies, coding help, chit-chat, etc.), DO NOT answer it. Briefly "
-            "decline and steer back, e.g.: 'I can only help with VBWD products "
-            "and plans — what are you looking to do with VBWD?'\n"
-            "- Recommend ONLY items from the CATALOG below. Never invent an item "
-            "or a price. Always quote the exact price shown.\n"
-            "- Use the SALES NOTES below for context; never contradict the "
-            "catalog prices.\n"
-            "- TO BUY / COMPLETE A PURCHASE: when the customer wants to buy, "
-            "proceed, asks for 'the link' / 'the full link', or asks how to pay, "
-            "give them the FULL ABSOLUTE checkout link for the recommended item "
-            f"as `{self._checkout_link_template()}` (append `?coupon=CODE` ONLY "
-            "when a discount code was already offered earlier in this "
-            "conversation — reuse that exact code, never invent one). Always give "
-            "the complete URL including the domain. Tell them that opening the "
-            "link completes the order. Never say you lack context: use the RECENT "
-            "CONVERSATION to recall the item, link, and code.\n\n"
-            f"{self._render_training()}"
-            f"CATALOG:\n{catalog_text}\n\n"
-            f"SALES NOTES:\n{corpus_text}\n"
+        """Fill the editable ``system`` template with the runtime variables. No
+        prompt wording is hardcoded here — it all lives in the template file."""
+        return self._fill(
+            self._system_template,
+            {
+                "persona": self._persona,
+                "base_url": self._base_url,
+                "training": self._training_text,
+                "catalog": self._render_catalog(catalog_block),
+                "sales_notes": self._render_corpus(chunks),
+            },
         )
 
     @staticmethod
