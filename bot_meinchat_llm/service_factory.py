@@ -64,6 +64,7 @@ def build_consultant_service(*, persona: str, debug_mode: bool) -> Any:
         ConsultantService,
     )
 
+    config = _plugin_config()
     return ConsultantService(
         catalog_snapshot_service=build_catalog_snapshot_service(),
         retrieval_service=build_retrieval_service(),
@@ -71,8 +72,46 @@ def build_consultant_service(*, persona: str, debug_mode: bool) -> Any:
         persona=persona,
         debug_mode=debug_mode,
         conversation_history_provider=_recent_room_conversation,
-        base_url=_plugin_config().get("public_base_url", ""),
+        base_url=config.get("public_base_url", ""),
+        training_text=_read_training_lessons(
+            int(config.get("training_max_chars", 8000) or 8000)
+        ),
     )
+
+
+def _read_training_lessons(max_chars: int) -> str:
+    """Concatenate the merchant's 'how to sell' lesson files (``*.md`` / ``*.txt``)
+    from the configured ``training_dir`` so EVERY turn is steered by them. Capped
+    at ``max_chars`` (cost guard); missing dir → empty (no crash)."""
+    import os
+
+    plugin = _plugin()
+    training_dir = (
+        plugin.resolved_training_dir()
+        if plugin is not None and hasattr(plugin, "resolved_training_dir")
+        else ""
+    )
+    if not training_dir or not os.path.isdir(training_dir):
+        return ""
+    parts = []
+    total = 0
+    for name in sorted(os.listdir(training_dir)):
+        if not name.lower().endswith((".md", ".txt")):
+            continue
+        if name.lower().startswith("readme"):
+            continue  # merchant docs, not a consultant lesson
+        try:
+            with open(os.path.join(training_dir, name), encoding="utf-8") as handle:
+                text = handle.read().strip()
+        except OSError:
+            continue
+        if not text:
+            continue
+        parts.append(text)
+        total += len(text)
+        if total >= max_chars:
+            break
+    return "\n\n---\n\n".join(parts)[:max_chars]
 
 
 def _recent_room_conversation(inbound: Any) -> list:

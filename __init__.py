@@ -59,6 +59,13 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # Corpus directory. ``${VBWD_VAR_DIR}`` is resolved at runtime by
     # ``resolved_rag_dir`` so a relocated var dir is honoured per environment.
     "rag_dir": "${VBWD_VAR_DIR}/bot-meinchat-llm/rag",
+    # TRAINING directory — "how to sell" LESSONS a merchant writes to coach the
+    # consultant before going live (sales method, example dialogues, objection
+    # handling). Distinct from ``rag_dir`` (product/price KNOWLEDGE): every
+    # lesson here is ALWAYS applied to steer the consultant's behaviour.
+    "training_dir": "${VBWD_VAR_DIR}/bot-meinchat-llm/training",
+    # Max characters of training lessons injected into the prompt (cost guard).
+    "training_max_chars": 8000,
     "debug_mode": False,
 }
 
@@ -133,6 +140,14 @@ class BotMeinchatLlmPlugin(BasePlugin):
         import os
 
         configured = self.get_config("rag_dir", DEFAULT_CONFIG["rag_dir"])
+        var_dir = os.environ.get("VBWD_VAR_DIR", _DEFAULT_VAR_DIR)
+        return configured.replace("${VBWD_VAR_DIR}", var_dir)
+
+    def resolved_training_dir(self) -> str:
+        """The training-lessons directory with ``${VBWD_VAR_DIR}`` expanded."""
+        import os
+
+        configured = self.get_config("training_dir", DEFAULT_CONFIG["training_dir"])
         var_dir = os.environ.get("VBWD_VAR_DIR", _DEFAULT_VAR_DIR)
         return configured.replace("${VBWD_VAR_DIR}", var_dir)
 

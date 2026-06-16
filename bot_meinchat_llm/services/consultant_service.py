@@ -78,6 +78,9 @@ class ConsultantService:
         top_k: int = DEFAULT_RETRIEVAL_TOP_K,
         conversation_history_provider: Any = None,
         base_url: str = "",
+        training_text: str = "",
+        system_template: str = "",
+        user_template: str = "",
     ) -> None:
         self._catalog_snapshot_service = catalog_snapshot_service
         self._retrieval_service = retrieval_service
@@ -85,6 +88,12 @@ class ConsultantService:
         self._persona = persona
         self._debug_mode = debug_mode
         self._top_k = top_k
+        # Merchant's "how to sell" lessons (from training_dir) — ALWAYS applied.
+        self._training_text = (training_text or "").strip()
+        # Editable prompt TEMPLATES (no prompt text is hardcoded here): the
+        # system/user prompts come from files with ``{{token}}`` variables.
+        self._system_template = system_template or ""
+        self._user_template = user_template or ""
         # Absolute site origin so the consultant quotes FULL checkout links.
         self._base_url = (base_url or "").rstrip("/")
         # Optional ``Callable[[BotInbound], List[{"role","text"}]]`` returning the
@@ -122,30 +131,33 @@ class ConsultantService:
         choices = self._build_choices(parsed.get("recommendations") or [], catalog_block)
         return BotReply(text=reply_text, choices=choices)
 
-    def _checkout_link_template(self) -> str:
-        """The example checkout-link shape shown to the model — absolute when a
-        ``base_url`` is configured (e.g. http://localhost:8080/tarif-plans/<slug>)."""
-        return f"{self._base_url}/tarif-plans/<slug>"
+    @staticmethod
+    def _fill(template: str, variables: dict) -> str:
+        """Substitute ``{{name}}`` tokens in a template with the given values.
+
+        Uses plain string replacement (not ``str.format``) so literal ``{ } $``
+        characters inside the substituted CONTENT (catalog, docs, history) are
+        never interpreted as placeholders."""
+        result = template
+        for name, value in variables.items():
+            result = result.replace("{{" + name + "}}", str(value))
+        return result
 
     # ── prompt construction ─────────────────────────────────────────────────
     def _build_user_prompt(self, query: str, inbound: Any) -> str:
         """The current question, prefixed with the recent room conversation so
-        follow-ups ("give me the full link", "yes, buy it") keep context."""
+        follow-ups ("give me the full link", "yes, buy it") keep context. The
+        wording lives in the ``user`` template; only the history VALUE is built
+        here."""
         history = self._fetch_history(inbound)
-        if not history:
+        if not history or not self._user_template:
             return query or "Hello"
-        lines = ["RECENT CONVERSATION (oldest first):"]
+        lines = []
         for entry in history:
             text = str(entry.get("text", "")).strip()
             if text:
                 lines.append(f"{entry.get('role', 'Customer')}: {text}")
-        lines.append("")
-        lines.append(
-            "Reply to the Customer's most recent message above, using the "
-            "conversation for context (e.g. which item, link, or discount code "
-            "was already offered)."
-        )
-        return "\n".join(lines)
+        return self._fill(self._user_template, {"history": "\n".join(lines)})
 
     def _fetch_history(self, inbound: Any) -> List[dict]:
         if self._conversation_history_provider is None:
@@ -195,6 +207,7 @@ class ConsultantService:
             "the complete URL including the domain. Tell them that opening the "
             "link completes the order. Never say you lack context: use the RECENT "
             "CONVERSATION to recall the item, link, and code.\n\n"
+            f"{self._render_training()}"
             f"CATALOG:\n{catalog_text}\n\n"
             f"SALES NOTES:\n{corpus_text}\n"
         )
