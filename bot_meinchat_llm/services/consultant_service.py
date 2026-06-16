@@ -76,6 +76,8 @@ class ConsultantService:
         persona: str,
         debug_mode: bool = False,
         top_k: int = DEFAULT_RETRIEVAL_TOP_K,
+        conversation_history_provider: Any = None,
+        base_url: str = "",
     ) -> None:
         self._catalog_snapshot_service = catalog_snapshot_service
         self._retrieval_service = retrieval_service
@@ -83,6 +85,11 @@ class ConsultantService:
         self._persona = persona
         self._debug_mode = debug_mode
         self._top_k = top_k
+        # Absolute site origin so the consultant quotes FULL checkout links.
+        self._base_url = (base_url or "").rstrip("/")
+        # Optional ``Callable[[BotInbound], List[{"role","text"}]]`` returning the
+        # recent room conversation (oldest→newest) so follow-ups keep context.
+        self._conversation_history_provider = conversation_history_provider
 
     def respond(self, inbound: Any) -> Any:
         """Answer one free-text turn, grounded in the corpus + the live catalog.
@@ -97,7 +104,7 @@ class ConsultantService:
         chunks = self._retrieve_chunks(query)
 
         system_prompt = self._build_system_prompt(catalog_block, chunks)
-        user_prompt = query or "Hello"
+        user_prompt = self._build_user_prompt(query, inbound)
 
         try:
             raw_result = self._llm_client_provider().generate(
@@ -115,7 +122,40 @@ class ConsultantService:
         choices = self._build_choices(parsed.get("recommendations") or [], catalog_block)
         return BotReply(text=reply_text, choices=choices)
 
+    def _checkout_link_template(self) -> str:
+        """The example checkout-link shape shown to the model — absolute when a
+        ``base_url`` is configured (e.g. http://localhost:8080/tarif-plans/<slug>)."""
+        return f"{self._base_url}/tarif-plans/<slug>"
+
     # ── prompt construction ─────────────────────────────────────────────────
+    def _build_user_prompt(self, query: str, inbound: Any) -> str:
+        """The current question, prefixed with the recent room conversation so
+        follow-ups ("give me the full link", "yes, buy it") keep context."""
+        history = self._fetch_history(inbound)
+        if not history:
+            return query or "Hello"
+        lines = ["RECENT CONVERSATION (oldest first):"]
+        for entry in history:
+            text = str(entry.get("text", "")).strip()
+            if text:
+                lines.append(f"{entry.get('role', 'Customer')}: {text}")
+        lines.append("")
+        lines.append(
+            "Reply to the Customer's most recent message above, using the "
+            "conversation for context (e.g. which item, link, or discount code "
+            "was already offered)."
+        )
+        return "\n".join(lines)
+
+    def _fetch_history(self, inbound: Any) -> List[dict]:
+        if self._conversation_history_provider is None:
+            return []
+        try:
+            return self._conversation_history_provider(inbound) or []
+        except Exception as error:  # noqa: BLE001 — history is best-effort
+            self._log_failure(error)
+            return []
+
     def _retrieve_chunks(self, query: str) -> List[Any]:
         if not query:
             return []
@@ -132,13 +172,29 @@ class ConsultantService:
         corpus_text = self._render_corpus(chunks)
         return (
             f"{self._persona}\n\n"
-            "You are a concise sales consultant. Keep answers short — the guest "
-            "is billed per word for both their question and your reply.\n\n"
+            "You are a concise sales consultant for VBWD. Keep answers short — "
+            "the guest is billed per word for both their question and your "
+            "reply.\n\n"
             "RULES:\n"
+            "- STAY ON TOPIC. You ONLY discuss VBWD: its products, plans, and "
+            "how to buy them, using the CATALOG and SALES NOTES below. If the "
+            "customer asks anything unrelated to VBWD (general knowledge, other "
+            "companies, coding help, chit-chat, etc.), DO NOT answer it. Briefly "
+            "decline and steer back, e.g.: 'I can only help with VBWD products "
+            "and plans — what are you looking to do with VBWD?'\n"
             "- Recommend ONLY items from the CATALOG below. Never invent an item "
             "or a price. Always quote the exact price shown.\n"
             "- Use the SALES NOTES below for context; never contradict the "
-            "catalog prices.\n\n"
+            "catalog prices.\n"
+            "- TO BUY / COMPLETE A PURCHASE: when the customer wants to buy, "
+            "proceed, asks for 'the link' / 'the full link', or asks how to pay, "
+            "give them the FULL ABSOLUTE checkout link for the recommended item "
+            f"as `{self._checkout_link_template()}` (append `?coupon=CODE` ONLY "
+            "when a discount code was already offered earlier in this "
+            "conversation — reuse that exact code, never invent one). Always give "
+            "the complete URL including the domain. Tell them that opening the "
+            "link completes the order. Never say you lack context: use the RECENT "
+            "CONVERSATION to recall the item, link, and code.\n\n"
             f"CATALOG:\n{catalog_text}\n\n"
             f"SALES NOTES:\n{corpus_text}\n"
         )

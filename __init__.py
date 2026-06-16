@@ -51,6 +51,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     ),
     # Whether the consultant offers a referral discount on a buy intent (S98.4).
     "reward_enabled": True,
+    # Absolute site origin used to build FULL checkout links (e.g.
+    # http://localhost:8080). Empty ⇒ relative paths. Set to your public URL.
+    "public_base_url": "http://localhost:8080",
     # Retrieval backend. "fts" = Postgres full-text baseline (D-Retrieval).
     "retrieval_mode": "fts",
     # Corpus directory. ``${VBWD_VAR_DIR}`` is resolved at runtime by
@@ -67,6 +70,11 @@ class BotMeinchatLlmPlugin(BasePlugin):
 
     #: The namespace bot-base routes commands / free text to (D1 / D7).
     bot_namespace = BOT_NAMESPACE
+
+    #: Opt into answering UNCLAIMED free text (bot-base ambient-answerer seam) so
+    #: a widget guest can just type a question and the consultant replies — no
+    #: ``/consultant`` command needed. A command still claims the chat as usual.
+    bot_ambient_answerer = True
 
     @property
     def metadata(self) -> PluginMetadata:

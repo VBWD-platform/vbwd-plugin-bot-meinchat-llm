@@ -72,12 +72,16 @@ class SalesAttributionService:
         bot_nickname: str,
         room_coupon_cache: Any,
         reward_enabled: bool = True,
+        base_url: str = "",
     ) -> None:
         self._referral_service_provider = referral_service_provider
         self._bot_user_id_provider = bot_user_id_provider
         self._bot_nickname = bot_nickname
         self._room_coupon_cache = room_coupon_cache
         self._reward_enabled = reward_enabled
+        # Absolute site origin for checkout links (e.g. http://localhost:8080).
+        # Empty ⇒ relative paths (back-compat).
+        self._base_url = (base_url or "").rstrip("/")
 
     def offer_for_buy(self, *, room_id: str, item: CatalogItem) -> Optional[CouponOffer]:
         """Return a ``CouponOffer`` for ``item``, or ``None`` to fall back plain.
@@ -136,9 +140,9 @@ class SalesAttributionService:
         return referral_coupon.coupon_code
 
     # ── deep links (D-Purchase-scope) ───────────────────────────────────────
-    @staticmethod
-    def _build_deep_link(item: CatalogItem, coupon_code: str) -> str:
-        """A web checkout deep link with the coupon pre-applied, per sellable type.
+    def _build_deep_link(self, item: CatalogItem, coupon_code: str) -> str:
+        """An ABSOLUTE web checkout link with the coupon pre-applied, per sellable
+        type (prefixed with the configured ``base_url``; relative if unset).
 
         Telegram parity is out of scope (the sprint): these are web-app links.
         """
@@ -150,4 +154,4 @@ class SalesAttributionService:
         }
         path = path_by_type.get(item.sellable_type, f"/tarif-plans/{item.slug}")
         separator = "&" if "?" in path else "?"
-        return f"{path}{separator}coupon={coupon_code}"
+        return f"{self._base_url}{path}{separator}coupon={coupon_code}"

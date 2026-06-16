@@ -70,7 +70,50 @@ def build_consultant_service(*, persona: str, debug_mode: bool) -> Any:
         llm_client_provider=lambda: _resolve_llm_client(),
         persona=persona,
         debug_mode=debug_mode,
+        conversation_history_provider=_recent_room_conversation,
+        base_url=_plugin_config().get("public_base_url", ""),
     )
+
+
+def _recent_room_conversation(inbound: Any) -> list:
+    """The last few messages of the inbound's room (oldest→newest) as
+    ``[{"role": "Customer"|"Consultant", "text": str}]`` so the consultant keeps
+    conversational context. Soft-guarded: meinchat absent / bad chat_id → ``[]``.
+    The room id is the inbound chat_id minus the provider ``room:`` prefix; the
+    Customer is the inbound identity, everyone else (the bot) is the Consultant.
+    """
+    from uuid import UUID
+
+    chat_ref = getattr(inbound, "chat_ref", None)
+    chat_id = getattr(chat_ref, "chat_id", "") if chat_ref is not None else ""
+    if not chat_id:
+        return []
+    room_id_text = chat_id[len("room:"):] if chat_id.startswith("room:") else chat_id
+    try:
+        room_id = UUID(room_id_text)
+    except (ValueError, AttributeError):
+        return []
+    identity = getattr(inbound, "identity", None)
+    guest_user_id = getattr(identity, "vbwd_user_id", None) if identity else None
+    try:
+        from vbwd.extensions import db
+        from plugins.meinchat.meinchat.repositories.message_repository import (
+            MessageRepository,
+        )
+
+        rows = MessageRepository(db.session).page_room(room_id, limit=8)
+    except Exception:  # noqa: BLE001 — meinchat soft dep / read failure
+        return []
+    history = []
+    for row in reversed(rows):  # page_room is newest-first
+        body = (getattr(row, "body", None) or "").strip()
+        if not body:
+            continue
+        is_customer = str(getattr(row, "sender_id", "")) == str(guest_user_id)
+        history.append(
+            {"role": "Customer" if is_customer else "Consultant", "text": body}
+        )
+    return history
 
 
 def build_sales_attribution_service(*, reward_enabled: bool) -> Any:
@@ -88,6 +131,7 @@ def build_sales_attribution_service(*, reward_enabled: bool) -> Any:
         bot_nickname=BOT_SENDER_NICKNAME,
         room_coupon_cache=RoomCouponRepository(db.session),
         reward_enabled=reward_enabled,
+        base_url=_plugin_config().get("public_base_url", ""),
     )
 
 
