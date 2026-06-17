@@ -76,7 +76,30 @@ def build_consultant_service(*, persona: str, debug_mode: bool) -> Any:
         training_text=_read_training_lessons(
             int(config.get("training_max_chars", 8000) or 8000)
         ),
+        system_template=_load_prompt_template("system.md"),
+        user_template=_load_prompt_template("user.md"),
     )
+
+
+def _load_prompt_template(name: str) -> str:
+    """The editable prompt template ``name`` — the merchant's copy in
+    ``prompt_dir`` if present, else the plugin's bundled default. No prompt text
+    is hardcoded in Python; it lives in these files."""
+    import os
+
+    plugin = _plugin()
+    candidates = []
+    if plugin is not None and hasattr(plugin, "resolved_prompt_dir"):
+        candidates.append(os.path.join(plugin.resolved_prompt_dir(), name))
+    candidates.append(os.path.join(os.path.dirname(__file__), "templates", name))
+    for path in candidates:
+        try:
+            if os.path.isfile(path):
+                with open(path, encoding="utf-8") as handle:
+                    return handle.read()
+        except OSError:
+            continue
+    return ""
 
 
 def _read_training_lessons(max_chars: int) -> str:

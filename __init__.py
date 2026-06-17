@@ -66,6 +66,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "training_dir": "${VBWD_VAR_DIR}/bot-meinchat-llm/training",
     # Max characters of training lessons injected into the prompt (cost guard).
     "training_max_chars": 8000,
+    # Editable prompt-TEMPLATE directory (``system.md`` + ``user.md`` with
+    # ``{{token}}`` variables). Seeded from the plugin defaults on enable so a
+    # merchant can tune the wording without touching code.
+    "prompt_dir": "${VBWD_VAR_DIR}/bot-meinchat-llm/prompts",
     "debug_mode": False,
 }
 
@@ -151,6 +155,34 @@ class BotMeinchatLlmPlugin(BasePlugin):
         var_dir = os.environ.get("VBWD_VAR_DIR", _DEFAULT_VAR_DIR)
         return configured.replace("${VBWD_VAR_DIR}", var_dir)
 
+    def resolved_prompt_dir(self) -> str:
+        """The editable prompt-template directory with ``${VBWD_VAR_DIR}`` expanded."""
+        import os
+
+        configured = self.get_config("prompt_dir", DEFAULT_CONFIG["prompt_dir"])
+        var_dir = os.environ.get("VBWD_VAR_DIR", _DEFAULT_VAR_DIR)
+        return configured.replace("${VBWD_VAR_DIR}", var_dir)
+
+    def _seed_prompt_templates(self) -> None:
+        """Copy the plugin's default prompt templates into the merchant-editable
+        ``prompt_dir`` if absent — so the wording can be tuned without code."""
+        import os
+        import shutil
+
+        bundled = os.path.join(os.path.dirname(__file__), "bot_meinchat_llm", "templates")
+        target = self.resolved_prompt_dir()
+        try:
+            os.makedirs(target, exist_ok=True)
+            for name in ("system.md", "user.md"):
+                source_path = os.path.join(bundled, name)
+                target_path = os.path.join(target, name)
+                if os.path.isfile(source_path) and not os.path.exists(target_path):
+                    shutil.copyfile(source_path, target_path)
+        except OSError as error:
+            logging.getLogger(__name__).info(
+                "[bot-meinchat-llm] prompt-template seed skipped (%s)", error
+            )
+
     def on_enable(self) -> None:
         # Register the plugin's repository as a container provider so routes /
         # services / other plugins resolve it via the container (the DI gotcha
@@ -173,6 +205,9 @@ class BotMeinchatLlmPlugin(BasePlugin):
                     "bot_meinchat_llm_room_coupon_repository": RoomCouponRepository,
                 },
             )
+
+        # Seed the editable prompt templates into the merchant's var dir.
+        self._seed_prompt_templates()
 
         # S98.1 — best-effort corpus index on enable. Never break plugin enable
         # if the corpus dir is missing / unreadable (degrades to "no corpus").
