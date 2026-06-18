@@ -166,6 +166,7 @@ class BotMeinchatLlmPlugin(BasePlugin):
     def _seed_prompt_templates(self) -> None:
         """Copy the plugin's default prompt templates into the merchant-editable
         ``prompt_dir`` if absent — so the wording can be tuned without code."""
+        import logging
         import os
         import shutil
 

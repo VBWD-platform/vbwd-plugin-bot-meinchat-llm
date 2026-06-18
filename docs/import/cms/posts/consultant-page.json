@@ -1,0 +1,22 @@
+{
+  "vbwd_export": "cms_posts",
+  "version": 1,
+  "cms_posts": [
+    {
+      "type": "page",
+      "slug": "consultant",
+      "title": "Talk to our consultant",
+      "status": "published",
+      "language": "en",
+      "layout_slug": "consultant-layout",
+      "content_html": "",
+      "page_assignments": [
+        {
+          "widget_slug": "meinchat-bot-widget",
+          "area_name": "chat",
+          "sort_order": 0
+        }
+      ]
+    }
+  ]
+}

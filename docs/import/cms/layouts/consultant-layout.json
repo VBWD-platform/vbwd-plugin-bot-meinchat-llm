@@ -1,0 +1,17 @@
+{
+  "vbwd_export": "cms_layouts",
+  "version": 1,
+  "cms_layouts": [
+    {
+      "slug": "consultant-layout",
+      "name": "Consultant",
+      "description": "Hosts the meinchat consultant chat widget.",
+      "areas": [
+        { "name": "chat", "type": "vue", "label": "Chat" }
+      ],
+      "sort_order": 0,
+      "is_active": true,
+      "is_default": false
+    }
+  ]
+}
