@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Any, Callable, List
 
 from plugins.bot_meinchat_llm.bot_meinchat_llm.services.catalog_snapshot_service import (  # noqa: E501
@@ -36,6 +37,26 @@ from plugins.bot_meinchat_llm.bot_meinchat_llm.services.catalog_snapshot_service
 )
 
 logger = logging.getLogger(__name__)
+
+#: The plugin's bundled prompt templates live one level up from ``services/``.
+_BUNDLED_TEMPLATES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "templates"
+)
+
+
+def _bundled_template(name: str) -> str:
+    """The plugin's bundled default prompt template ``name`` (no prompt text is
+    hardcoded in Python — it lives in these files). Used when the caller does
+    not supply a template; the factory still overrides with the merchant copy."""
+    path = os.path.join(_BUNDLED_TEMPLATES_DIR, name)
+    try:
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8") as handle:
+                return handle.read()
+    except OSError:
+        pass
+    return ""
+
 
 #: Default number of corpus chunks injected per turn. Kept small so the prompt
 #: stays inside the latency budget (nginx 60s) and the guest-economy charge.
@@ -92,8 +113,10 @@ class ConsultantService:
         self._training_text = (training_text or "").strip()
         # Editable prompt TEMPLATES (no prompt text is hardcoded here): the
         # system/user prompts come from files with ``{{token}}`` variables.
-        self._system_template = system_template or ""
-        self._user_template = user_template or ""
+        # When the caller passes none, fall back to the plugin's bundled
+        # defaults so a directly-constructed service still grounds the model.
+        self._system_template = system_template or _bundled_template("system.md")
+        self._user_template = user_template or _bundled_template("user.md")
         # Absolute site origin so the consultant quotes FULL checkout links.
         self._base_url = (base_url or "").rstrip("/")
         # Optional ``Callable[[BotInbound], List[{"role","text"}]]`` returning the
@@ -128,7 +151,9 @@ class ConsultantService:
             return BotReply(text=FALLBACK_REPLY_TEXT)
 
         reply_text = str(parsed.get("reply_text") or "").strip() or FALLBACK_REPLY_TEXT
-        choices = self._build_choices(parsed.get("recommendations") or [], catalog_block)
+        choices = self._build_choices(
+            parsed.get("recommendations") or [], catalog_block
+        )
         return BotReply(text=reply_text, choices=choices)
 
     @staticmethod
