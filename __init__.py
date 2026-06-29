@@ -91,7 +91,7 @@ class BotMeinchatLlmPlugin(BasePlugin):
     def metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="bot-meinchat-llm",
-            version="1.0.0",
+            version="26.6",
             author="VBWD Team",
             description=(
                 "RAG-grounded LLM consultant and sales agent: answers grounded "
