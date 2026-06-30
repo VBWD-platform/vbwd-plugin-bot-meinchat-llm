@@ -29,9 +29,7 @@ def _load_migration():
         "versions",
         "20260616_1100_bot_llm_room_coupon.py",
     )
-    spec = importlib.util.spec_from_file_location(
-        "bot_llm_room_coupon_migration", path
-    )
+    spec = importlib.util.spec_from_file_location("bot_llm_room_coupon_migration", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

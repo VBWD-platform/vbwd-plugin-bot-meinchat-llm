@@ -59,9 +59,7 @@ class _FakePriceFactory:
 def _patch_only_plans(monkeypatch, plans):
     """Make the plan reader return ``plans`` and every other reader empty."""
     service_cls = CatalogSnapshotService
-    monkeypatch.setattr(
-        service_cls, "_snapshot_addons", lambda self: [], raising=True
-    )
+    monkeypatch.setattr(service_cls, "_snapshot_addons", lambda self: [], raising=True)
     monkeypatch.setattr(
         service_cls, "_snapshot_products", lambda self: [], raising=True
     )

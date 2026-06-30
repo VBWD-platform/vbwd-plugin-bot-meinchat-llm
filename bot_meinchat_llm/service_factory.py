@@ -150,7 +150,7 @@ def _recent_room_conversation(inbound: Any) -> list:
     chat_id = getattr(chat_ref, "chat_id", "") if chat_ref is not None else ""
     if not chat_id:
         return []
-    room_id_text = chat_id[len("room:"):] if chat_id.startswith("room:") else chat_id
+    room_id_text = chat_id[len("room:") :] if chat_id.startswith("room:") else chat_id
     try:
         room_id = UUID(room_id_text)
     except (ValueError, AttributeError):

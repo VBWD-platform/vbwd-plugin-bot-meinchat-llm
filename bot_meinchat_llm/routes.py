@@ -24,9 +24,7 @@ logger = logging.getLogger(__name__)
 bot_meinchat_llm_bp = Blueprint("bot_meinchat_llm", __name__)
 
 
-@bot_meinchat_llm_bp.route(
-    "/api/v1/admin/bot-meinchat-llm/reindex", methods=["POST"]
-)
+@bot_meinchat_llm_bp.route("/api/v1/admin/bot-meinchat-llm/reindex", methods=["POST"])
 @require_auth
 @require_admin
 @require_permission(MANAGE_PERMISSION_KEY)

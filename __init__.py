@@ -170,7 +170,9 @@ class BotMeinchatLlmPlugin(BasePlugin):
         import os
         import shutil
 
-        bundled = os.path.join(os.path.dirname(__file__), "bot_meinchat_llm", "templates")
+        bundled = os.path.join(
+            os.path.dirname(__file__), "bot_meinchat_llm", "templates"
+        )
         target = self.resolved_prompt_dir()
         try:
             os.makedirs(target, exist_ok=True)
@@ -342,9 +344,7 @@ class BotMeinchatLlmPlugin(BasePlugin):
         )
         return service.respond(context)
 
-    def _handle_buy_choice(
-        self, context: "BotInbound", action_data: str
-    ) -> "BotReply":
+    def _handle_buy_choice(self, context: "BotInbound", action_data: str) -> "BotReply":
         """A tapped ``consultant:buy:<type>:<slug>`` choice → a coupon offer.
 
         Validates the slug against the live catalog, then offers a per-room
@@ -367,8 +367,7 @@ class BotMeinchatLlmPlugin(BasePlugin):
             (
                 candidate
                 for candidate in catalog_block.items
-                if candidate.slug == slug
-                and candidate.sellable_type == sellable_type
+                if candidate.slug == slug and candidate.sellable_type == sellable_type
             ),
             None,
         )
@@ -402,9 +401,7 @@ class BotMeinchatLlmPlugin(BasePlugin):
 
         if not self._is_admin_identity(context):
             return BotReply(
-                text=(
-                    "Only an administrator can reindex the sales documents."
-                )
+                text=("Only an administrator can reindex the sales documents.")
             )
         try:
             from plugins.bot_meinchat_llm.bot_meinchat_llm.service_factory import (

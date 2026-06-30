@@ -130,9 +130,11 @@ def _catalog_with_team_plan() -> CatalogBlock:
 
 
 def _build_service(llm_client, *, persona="PERSONA-MARKER", retrieval_chunks=None):
-    chunks = retrieval_chunks if retrieval_chunks is not None else [
-        _FakeChunk("Our tariff plans suit teams of any size.")
-    ]
+    chunks = (
+        retrieval_chunks
+        if retrieval_chunks is not None
+        else [_FakeChunk("Our tariff plans suit teams of any size.")]
+    )
     return ConsultantService(
         catalog_snapshot_service=_FakeCatalogService(_catalog_with_team_plan()),
         retrieval_service=_FakeRetrievalService(chunks),

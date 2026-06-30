@@ -39,7 +39,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_bot_llm_room_coupon_room_id", table_name="bot_llm_room_coupon"
-    )
+    op.drop_index("ix_bot_llm_room_coupon_room_id", table_name="bot_llm_room_coupon")
     op.drop_table("bot_llm_room_coupon")

@@ -41,7 +41,9 @@ from plugins.referral.referral.service_factory import build_referral_service
 from plugins.bot_meinchat_llm.bot_meinchat_llm.repositories.room_coupon_repository import (  # noqa: E501
     RoomCouponRepository,
 )
-from plugins.bot_meinchat_llm.bot_meinchat_llm.service_factory import resolve_bot_user_id
+from plugins.bot_meinchat_llm.bot_meinchat_llm.service_factory import (
+    resolve_bot_user_id,
+)
 from plugins.bot_meinchat_llm.bot_meinchat_llm.services.catalog_snapshot_service import (  # noqa: E501
     CatalogItem,
     SELLABLE_PLAN,

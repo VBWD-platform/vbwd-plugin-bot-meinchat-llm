@@ -19,9 +19,7 @@ from plugins.bot_meinchat_llm.bot_meinchat_llm.services.rag_ingest_service impor
     RagIngestService,
 )
 
-_FIXTURE_PDF = os.path.join(
-    os.path.dirname(__file__), "..", "fixtures", "plans.pdf"
-)
+_FIXTURE_PDF = os.path.join(os.path.dirname(__file__), "..", "fixtures", "plans.pdf")
 
 
 @pytest.mark.integration

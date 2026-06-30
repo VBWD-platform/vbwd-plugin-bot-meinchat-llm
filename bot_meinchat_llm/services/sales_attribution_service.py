@@ -83,7 +83,9 @@ class SalesAttributionService:
         # Empty ⇒ relative paths (back-compat).
         self._base_url = (base_url or "").rstrip("/")
 
-    def offer_for_buy(self, *, room_id: str, item: CatalogItem) -> Optional[CouponOffer]:
+    def offer_for_buy(
+        self, *, room_id: str, item: CatalogItem
+    ) -> Optional[CouponOffer]:
         """Return a ``CouponOffer`` for ``item``, or ``None`` to fall back plain.
 
         ``None`` is returned (a plain recommendation, no crash) when rewards are
