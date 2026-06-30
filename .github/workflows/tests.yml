@@ -36,6 +36,8 @@ jobs:
           git clone --depth=1 -q https://github.com/VBWD-platform/vbwd-plugin-subscription.git vbwd-backend/plugins/subscription || true
           git clone --depth=1 -q https://github.com/VBWD-platform/vbwd-plugin-shop.git vbwd-backend/plugins/shop || true
           git clone --depth=1 -q https://github.com/VBWD-platform/vbwd-plugin-booking.git vbwd-backend/plugins/booking || true
+          # Integration tests import plugins.cms.
+          git clone --depth=1 -q https://github.com/VBWD-platform/vbwd-plugin-cms.git vbwd-backend/plugins/cms || true
 
       # ── 3. Style checks (black · flake8 · mypy) ───────────────────────────
       - name: Set up Python 3.11
